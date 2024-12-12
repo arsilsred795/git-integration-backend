@@ -2,7 +2,7 @@ const express = require('express');
 const { connectToGitHub,fetchGitHubData, removeIntegration, fetchOrganizations, fetchRepos, fetchCommits, fetchPulls, fetchIssues, fetchChangelogs, fetchUsers, getAccessToken } = require('../controllers/githubController');
 
 const router = express.Router();
-
+// Defining the routes
 router.get('/connect', connectToGitHub);
 router.get('/accessToken', getAccessToken);
 router.get('/fetch-data', fetchGitHubData);
