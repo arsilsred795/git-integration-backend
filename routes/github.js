@@ -1,10 +1,10 @@
 const express = require('express');
-const { connectToGitHub, callbackFromGitHub, fetchGitHubData, removeIntegration, fetchOrganizations, fetchRepos, fetchCommits, fetchPulls, fetchIssues, fetchChangelogs, fetchUsers } = require('../controllers/githubController');
+const { connectToGitHub,fetchGitHubData, removeIntegration, fetchOrganizations, fetchRepos, fetchCommits, fetchPulls, fetchIssues, fetchChangelogs, fetchUsers, getAccessToken } = require('../controllers/githubController');
 
 const router = express.Router();
 
 router.get('/connect', connectToGitHub);
-router.get('/callback', callbackFromGitHub);
+router.get('/accessToken', getAccessToken);
 router.get('/fetch-data', fetchGitHubData);
 router.get('/organizations', fetchOrganizations);
 router.get('/organizations/repos', fetchRepos);
