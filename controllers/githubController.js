@@ -78,9 +78,10 @@ exports.fetchOrganizations = async (req, res) => {
 
 exports.fetchRepos = async (req, res) => {
   const { accesstoken } = req.headers;
+  const { org } = req.query;
   try {
     const response = await axios.get(
-      "https://api.github.com/orgs/{org}/repos",
+      `https://api.github.com/orgs/${org}/repos`,
       {
         headers: { Authorization: `Bearer ${accesstoken}` },
       }
