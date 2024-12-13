@@ -12,7 +12,6 @@ exports.connectToGitHub = (req, res) => {
   res.status(200).json(githubAuthUrl);
 };
 
-
 exports.getAccessToken = async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).send("Missing authorization code");
