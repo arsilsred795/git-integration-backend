@@ -2,16 +2,27 @@ const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const GitHubRouter = require('./routes/github');
+
 require('dotenv').config();
+
 const app = express();
 const PORT = 3000;
+const cors = require('cors');
 
+// Middleware
 app.use(express.json());
 app.use(session({
     secret: process.env.SESSION_SECRET || 'defaultSecret',
     resave: false,
     saveUninitialized: true,
 }));
+app.use(cors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  }));
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
