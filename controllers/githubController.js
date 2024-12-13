@@ -78,9 +78,10 @@ exports.fetchOrganizations = async (req, res) => {
 
 exports.fetchRepos = async (req, res) => {
   const { accesstoken } = req.headers;
+  const { org } = req.query;
   try {
     const response = await axios.get(
-      "https://api.github.com/orgs/{org}/repos",
+      `https://api.github.com/orgs/${org}/repos`,
       {
         headers: { Authorization: `Bearer ${accesstoken}` },
       }
@@ -125,12 +126,12 @@ exports.fetchPulls = async (req, res) => {
 };
 
 exports.fetchIssues = async (req, res) => {
-  const { accessToken, repo, owner } = req.headers;
+  const { accesstoken, repo, owner } = req.headers;
   try {
     const response = await axios.get(
       `https://api.github.com/repos/${owner}/${repo}/issues`,
       {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${accesstoken}` },
       }
     );
     res.status(200).json(response.data);
@@ -141,16 +142,38 @@ exports.fetchIssues = async (req, res) => {
 };
 
 exports.fetchChangelogs = async (req, res) => {
-  res.status(501).send("Changelogs endpoint not implemented yet");
+  const { accesstoken, repo, owner } = req.headers;
+  try {
+    // Fetch issues with the "changelog" label (or use a similar filter)
+    const releasesResult = await axios.get(
+      `https://api.github.com/repos/${owner}/${repo}/releases`,
+      {
+        headers: { Authorization: `Bearer ${accesstoken}` },
+        // params: { labels: "changelog", state: "open" },
+      }
+    );
+
+    const releases = releasesResult.data;
+
+    // Send the changelog data as a response
+    res.status(200).json(releases);
+  } catch (error) {
+    console.error("Error fetching changelogs:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch changelogs",
+      error: error.message,
+    });
+  }
 };
 
 exports.fetchUsers = async (req, res) => {
-  const { accessToken, org } = req.headers;
+  const { accesstoken, org } = req.headers;
   try {
     const response = await axios.get(
       `https://api.github.com/orgs/${org}/members`,
       {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${accesstoken}` },
       }
     );
     res.status(200).json(response.data);
@@ -161,46 +184,56 @@ exports.fetchUsers = async (req, res) => {
 };
 
 exports.removeIntegration = async (req, res) => {
-    const { userId } = req.body;
-    const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;
+  const { userId } = req.body;
+  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;
 
-    try {
-        // Find the integration for the given user ID
-        const integration = await GitHubIntegration.findOne({ userId });
-        if (!integration) {
-            return res.status(404).json({ message: 'Integration not found' });
-        }
-
-        if (integration.accessToken) {
-            try {
-                // Revoke the GitHub token
-                const revokeResponse = await axios({
-                    method: 'delete',
-                    url: `https://api.github.com/applications/${GITHUB_CLIENT_ID}/token`,
-                    headers: {
-                        Authorization: `Basic ${Buffer.from(`${GITHUB_CLIENT_ID}:${GITHUB_CLIENT_SECRET}`).toString('base64')}`,
-                        'Content-Type': 'application/json',
-                    },
-                    data: {
-                        access_token: integration.accessToken,
-                    },
-                });
-
-                if (revokeResponse.status !== 204) {
-                    console.warn('GitHub token revocation returned unexpected status:', revokeResponse.status);
-                }
-            } catch (error) {
-                console.error('Error revoking GitHub token:', error.response?.data || error.message);
-                return res.status(500).json({ message: 'Failed to revoke GitHub token' });
-            }
-        }
-
-        // Remove the integration from the database
-        await GitHubIntegration.deleteOne({ userId });
-
-        res.status(200).json({ message: 'Integration removed successfully' });
-    } catch (error) {
-        console.error('Error removing integration:', error.message);
-        res.status(500).json({ message: 'Failed to remove integration' });
+  try {
+    // Find the integration for the given user ID
+    const integration = await GitHubIntegration.findOne({ userId });
+    if (!integration) {
+      return res.status(404).json({ message: "Integration not found" });
     }
+
+    if (integration.accessToken) {
+      try {
+        // Revoke the GitHub token
+        const revokeResponse = await axios({
+          method: "delete",
+          url: `https://api.github.com/applications/${GITHUB_CLIENT_ID}/token`,
+          headers: {
+            Authorization: `Basic ${Buffer.from(
+              `${GITHUB_CLIENT_ID}:${GITHUB_CLIENT_SECRET}`
+            ).toString("base64")}`,
+            "Content-Type": "application/json",
+          },
+          data: {
+            access_token: integration.accessToken,
+          },
+        });
+
+        if (revokeResponse.status !== 204) {
+          console.warn(
+            "GitHub token revocation returned unexpected status:",
+            revokeResponse.status
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Error revoking GitHub token:",
+          error.response?.data || error.message
+        );
+        return res
+          .status(500)
+          .json({ message: "Failed to revoke GitHub token" });
+      }
+    }
+
+    // Remove the integration from the database
+    await GitHubIntegration.deleteOne({ userId });
+
+    res.status(200).json({ message: "Integration removed successfully" });
+  } catch (error) {
+    console.error("Error removing integration:", error.message);
+    res.status(500).json({ message: "Failed to remove integration" });
+  }
 };
